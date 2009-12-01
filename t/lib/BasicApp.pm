@@ -11,7 +11,7 @@ use warnings;
 
 use WeCARE::Server::Builder;
 
-WeCARE::Server::Builder->new->bootstrap;
+WeCARE::Server::Builder->new( __PACKAGE__ )->bootstrap;
 
 
 1;

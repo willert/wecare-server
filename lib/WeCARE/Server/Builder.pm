@@ -32,21 +32,13 @@ around BUILDARGS => sub {
   my $orig = shift;
   my $class = shift;
 
-  my %attr = @_ == 1 && ref $_[0] eq 'HASH' ? %{$_[0]} : @_;
-
-  $attr{appname} ||= do{
-    my ( $caller ) = map {
-      my $cpkg = [ caller($_) ]->[0];
-      eval{ $cpkg->isa( __PACKAGE__ )} ||
-        $cpkg =~ m/^(?:Class::MOP(?:$|::)|MooseX?(?:$|::))/ ? () : $cpkg;
-    } 1 .. 10;
-    $caller;
-  };
+  my %attr = @_ == 1 && ref $_[0] ne 'HASH' ?
+    @_ == 1 && ! ref $_[0] ? ( appname => $_[0] ) : @_ : %{$_[0]};
 
   $class->$orig( \%attr );
 };
 
-around new => sub{
+around new => sub {
   my $orig = shift;
   my $class = shift;
 
