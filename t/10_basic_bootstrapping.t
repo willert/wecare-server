@@ -12,6 +12,6 @@ use Test::Exception;
 use Catalyst::Test 'BasicApp';
 
 is( get('/'), 'Hello world!', 'Basic rendering' );
-is( get('/tpl'), 'Hello Mason!', 'Basic rendering' );
+is( get('/tpl'), 'Hello Mason!', 'Rendering through injected view' );
 
 done_testing;
