@@ -1,0 +1,2 @@
+<%flags> inherit => undef </%flags>
+<%init> $m->print( 'Hello Mason!' ); return; </%init>
