@@ -1,7 +1,6 @@
 package CatalystX::ShardType::Component;
 
 use Moose::Role;
-use MooseX::Method::Signatures;
 
 use namespace::autoclean;
 
