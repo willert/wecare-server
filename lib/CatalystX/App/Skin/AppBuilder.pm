@@ -21,6 +21,7 @@ use Carp;
 use Scalar::Util qw/blessed/;
 use List::MoreUtils qw/uniq/;
 use Hash::Merge::Simple qw/merge/;
+use Try::Tiny;
 
 has skin => (
   is       => 'ro',
@@ -36,22 +37,43 @@ override _build_config => sub {
   # printf STDERR "Building config\n", ;
 
   my $env = join( '::', $self->appname, 'Env' );
-  eval{ Class::MOP::load_class( $env ) };
-  my $use_env = $@ ? 0 : 1;
 
-  return merge(
+  my $use_env = 0;
+  try {
+    Class::MOP::load_class( $env );
+    $use_env = 1;
+  };
+
+  my $conf = merge(
     ( map{ +{ $_->get_app_config } } $self->skin->get_shards ),
     $config,
     $use_env ? $env->config : {}
   );
+
+  return $conf;
 };
 
 override _build_plugins => sub {
   my $self = shift;
-  my $plugins = super(); # Get what CatalystX::AppBuilder gives you
-  push @$plugins, $_->get_plugins for $self->skin->get_shards;
-  @$plugins = uniq @$plugins;
-  return $plugins;
+  my @plugins; # ignore what CatalystX::AppBuilder gives you, it's braindead
+  if ($self->debug) {
+    unshift @plugins, '-Debug';
+  }
+  push @plugins, $_->get_plugins for $self->skin->get_shards;
+  return [ uniq @plugins ];
+};
+
+override bootstrap => sub {
+  my $self = shift;
+  my @applicators = map{
+
+    # printf STDERR "Generating pre-bootstrap applicator for %s\n",
+    #   $_->meta->name;
+
+    $_->get_pre_bootstrap_applicator( $self );
+  } grep{ $_->can( 'get_pre_bootstrap_applicator' ) } $self->skin->get_shards;
+  $_->( $self->appname ) for @applicators;
+  return super();
 };
 
 no Moose;

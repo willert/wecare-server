@@ -31,6 +31,13 @@ has renderer => (
   shard_type => 'Trait',
 );
 
+has logger => (
+  is         => 'ro',
+  default    => 'WeCARE::Server::Shard::Logging',
+  traits     => [ 'Catalyst::Shard' ],
+  shard_type => 'Logger',
+);
+
 has defaults => (
   is         => 'ro',
   default    => 'WeCARE::Server::Shard::Defaults',

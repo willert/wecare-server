@@ -23,7 +23,7 @@ server.
 
 use Carp;
 use Hash::Merge::Simple qw/merge/;
-use List::MoreUtils qw/first_value/;
+use List::MoreUtils qw/first_value firstidx/;
 
 use Class::MOP::Method::Wrapped;
 use CatalystX::InjectComponent;
@@ -32,6 +32,8 @@ use CatalystX::Meta::Attribute::Trait::Shard;
 
 use CatalystX::AppBuilder;
 use Moose::Util::TypeConstraints;
+
+use Data::Dump qw/pp/;
 
 {
   my $tc = subtype as 'ArrayRef[Object]', where {
@@ -42,12 +44,22 @@ use Moose::Util::TypeConstraints;
     traits  => ['Array'],
     is      => 'bare',
     isa     => $tc,
+    lazy    => 1,
+    builder => '_build_shards',
     handles => {
       get_shards => 'elements',
     },
-    builder => '_build_shards',
   );
 }
+
+has shard_config => (
+  traits   => ['Hash'],
+  is       => 'ro',
+  isa      => 'HashRef',
+  handles  => {
+    get_shard_config => 'get'
+  }
+);
 
 has application => (
   is       => 'ro',
@@ -77,14 +89,19 @@ sub _build_shards {
     $self->meta->get_all_attributes;
 
   return [ map{
-    my $attr = $_->name;
+    my $attr = $self->meta->get_attribute( $_->name );
+    my $shard = $attr->get_value( $self );
 
-    # printf STDERR "Initializing shard for %s in %s\n",
-    #   $attr, $self->meta->name;
+    die "Invalid shard name '" . $attr->name . "'\n" unless $shard;
 
-    my $shard = $self->$attr;
+    # printf STDERR "Initializing shard %s for %s in %s\n",
+    #   $shard, $attr->name, $self->meta->name;
+
     Class::MOP::load_class( $shard );
-    $shard->new;
+
+    my $shard_args = $self->get_shard_config( $attr->name );
+    $shard->new( $shard_args ? $shard_args : () );
+
   } @shards ];
 
 }
@@ -134,12 +151,20 @@ sub init_skin {
 
 sub _build_bootstrapper {
   my ( $skin_class, $method_name, $import_args, $collectors ) = @_;
+
   return sub {
     my ( $app, $params ) = @_;
+    $params = [] unless defined $params;
+    my $shard_idx = firstidx { $_ eq 'shard' } @$params;
+    my $shard_conf = defined $shard_idx ? $params->[ $shard_idx + 1 ] : undef;
+    $shard_conf = {} unless defined $shard_conf;
+
     my $skin = $skin_class->new(
       application => $app,
-      defined $params ? ( builder_args => $params ) : (),
+      shard_config => $shard_conf,
+      ( defined $params ? ( builder_args => $params ) : () ),
     );
+
     $skin->apply_shards( $app );
   }
 }
