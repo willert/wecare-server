@@ -17,6 +17,19 @@ CatalystX::App::Skin
 B<CatalystX::App::Skin> builds a standardized Catalyst
 server.
 
+=head1 MOTIVATION
+
+Catalyst gives you a lot of freedom with regards to the layout of your
+application, the models and views used and nearly all parts of request
+and configuration handling. This is all great fun, until you set up your
+tenth smallish application with all the parts and tweaks and base config
+you are accustomed to.
+
+Even if you are a responsible citizen and appropiatly package all your
+tools, inject them in your own local cpan mirror and keep your dependencies
+up to date, this is still a major hassle. You could (in theory) create your
+own static code generation faramework ala C<catalyst.pl> ...
+
 =cut
 
 # use Moose::Exporter;
